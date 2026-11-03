@@ -1,0 +1,45 @@
+name: Deploy Sweet Bakery
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download template
+        run: |
+          curl -L -e "https://www.tooplate.com/" \
+            -o template.zip \
+            "https://www.tooplate.com/download/2168_sweet_bakery"
+
+      - name: Unzip and prepare site
+        run: |
+          unzip -q template.zip -d site
+          # Tooplate zips contain one top-level folder; flatten it
+          DIR=$(find site -mindepth 1 -maxdepth 1 -type d | head -n 1)
+          mkdir public
+          cp -r "$DIR"/. public/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
